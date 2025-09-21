@@ -1,5 +1,5 @@
 
-# 📉 Customer Churn Prediction – E-commerce App Users – Python
+# 📉 Customer Churn Prediction – E-commerce App Users – Python & scikit-learn
 
 **Author:** Loc Ha  
 **Date:** 2025 August  
@@ -78,7 +78,7 @@ How can we **predict and understand churn behavior** among e-commerce app users 
    - Standardize numeric features.  
 
    <details>
-   <summary>📌 View Python code</summary>
+   <summary>📌 View Python code for Data Preparation </summary>
 
    ```python
    from sklearn.model_selection import train_test_split
@@ -106,20 +106,113 @@ How can we **predict and understand churn behavior** among e-commerce app users 
    </details>
 
 2. **Exploratory Data Analysis (EDA)**  
-   - **Correlation analysis** (numeric features vs churn).  
-   - **Chi-square test** (categorical vs churn).  
+   - **Correlation analysis** (numeric features vs churn).
 
-   *Placeholder for chart: Correlation Heatmap*  
-   *Placeholder for chart: Churn Rate by Category*  
+   <details>
+      <summary>📌 View Python code for Numberic features </summary>
+   
+      ```python
+   #Phân tích các biến số học - Numberic features - Correlation
+   
+   numeric_cols = ['Tenure','SatisfactionScore','DaySinceLastOrder',
+                   'OrderCount','CouponUsed','CashbackAmount','HourSpendOnApp']
+   
+   corrs = {}
+   for col in numeric_cols:
+       corrs[col] = df[col].corr(df['Churn'])  # Pearson correlation (0/1 với numeric)
+   
+   print("Correlation với Churn:")
+   for k,v in corrs.items():
+       print(f"{k}: {v:.3f}")
+   
+   corr_df = pd.DataFrame.from_dict(corrs, orient='index', columns=['Correlation']).sort_values(by='Correlation')
+   
+   # Plot bar chart
+   plt.figure(figsize=(8,5))
+   sns.barplot(x=corr_df.index, y='Correlation', data=corr_df, palette="coolwarm")
+   plt.xticks(rotation=45)
+   plt.title("Point Biserial Correlation between Churn and Numeric Features")
+   plt.axhline(0, color='black', linestyle='--')
+   plt.show()
+      ```
+      <img width="706" height="560" alt="image" src="https://github.com/user-attachments/assets/5cfdee3d-d6e7-4797-81e5-f412c2c3a8b3" />
+   
+      </details>
 
-3. **Modeling**  
+
+  
+
+   - **Chi-square test** (categorical vs churn)
+
+   <details>
+    <summary>📌 View Python code for Categorical Features </summary>
+   
+      ```python
+   #Phân tích với biến phân loại - Categorical features - Chi-square test
+   
+   cat_cols = ['PreferredLoginDevice','PreferredPaymentMode','Gender',
+               'MaritalStatus','PreferedOrderCat','Complain']
+   
+   for col in cat_cols:
+   
+       # Kiểm định Chi-square - Chi-square tesst 
+       crosstab = pd.crosstab(df[col], df['Churn'])
+       chi2, p, dof, ex = chi2_contingency(crosstab)
+   
+       # Tính tỷ lệ churn + số lượng - Calculate churn rate and stats
+       summary = df.groupby(col)['Churn'].agg(['mean','count','sum'])
+       summary = summary.rename(columns={'mean':'ChurnRate','count':'Total','sum':'Churned'})
+       summary = summary.sort_values(by='ChurnRate', ascending=False)
+   
+       # In bảng số liệu - Print infor table
+       print(f"\n=== {col} ===")
+       print(summary.round(3))
+       print(f"Chi-square test p-value = {p:.6f}")
+   
+       # Vẽ chart - Visualization
+       plt.figure(figsize=(6,4))
+       sns.barplot(x=summary.index, y=summary['ChurnRate'], palette="viridis")
+       plt.title(f"Churn rate by {col}")
+       plt.ylabel("Churn rate")
+       plt.xticks(rotation=45)
+       plt.show()
+      ```
+      === PreferredLoginDevice ===
+   
+      <img width="545" height="455" alt="image" src="https://github.com/user-attachments/assets/1a123b69-997c-49fa-9778-95153eaf8198" />
+   
+      === PreferredPaymentMode ===
+      
+      <img width="545" height="472" alt="image" src="https://github.com/user-attachments/assets/46b42435-4e6a-42f7-8222-115a0ab97b6e" />
+      
+      === Gender ===
+      
+      <img width="553" height="425" alt="image" src="https://github.com/user-attachments/assets/ba559f89-02d0-46cb-99e6-530a84a60b50" />
+      
+      === MaritalStatus ===
+      
+      <img width="545" height="433" alt="image" src="https://github.com/user-attachments/assets/30027f9e-a9ac-4a41-abda-4def11674602" />
+      
+      === PreferedOrderCat ===
+      
+      <img width="545" height="486" alt="image" src="https://github.com/user-attachments/assets/3534c883-6b11-4282-8ea8-9130aa6bc0bf" />
+      
+      === Complain ===
+      
+      <img width="545" height="395" alt="image" src="https://github.com/user-attachments/assets/7cb6178f-7b23-41d9-8b70-976f93e80eac" />
+      
+      
+      </details>
+
+
+2. **Modeling**  
    - Algorithms tested: Logistic Regression, Random Forest.  
    - Metrics evaluated: Precision, Recall, F1, ROC-AUC, PR-AUC.  
    - **Best model selected**: Random Forest (balanced).  
 
    *Placeholder for chart: ROC Curve & Precision-Recall Curve*  
 
-4. **Segmentation (Clustering)**  
+3. **Segmentation (Clustering)**  
    - KMeans clustering applied on churned users.  
    - Elbow method → k=4 optimal clusters.  
 
