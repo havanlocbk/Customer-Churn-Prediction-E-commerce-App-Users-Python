@@ -211,7 +211,114 @@ How can we **predict and understand churn behavior** among e-commerce app users 
    - **Best model selected**: Random Forest (balanced).  
 
    *Placeholder for chart: ROC Curve & Precision-Recall Curve*  
+   
+<details>
+  <summary>📌 View Python code for Modeling (LogReg & RandomForest, balanced)</summary>
 
+```python
+# Modeling: Logistic Regression & Random Forest (balanced) + ROC/PR evaluation
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import (
+    classification_report, roc_auc_score, average_precision_score,
+    confusion_matrix, RocCurveDisplay, PrecisionRecallDisplay
+)
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+
+# Target & features
+y = df["Churn"].astype(int)
+X = df.drop(columns=["Churn", "CustomerID"])
+
+# Column types
+num_cols = X.select_dtypes(include=["int64","float64"]).columns
+cat_cols = X.select_dtypes(include=["object"]).columns
+
+# Preprocessing
+numeric = Pipeline([("imputer", SimpleImputer(strategy="median")),
+                    ("scaler", StandardScaler())])
+categorical = Pipeline([("imputer", SimpleImputer(strategy="most_frequent")),
+                        ("onehot", OneHotEncoder(handle_unknown="ignore"))])
+
+pre = ColumnTransformer([("num", numeric, num_cols),
+                         ("cat", categorical, cat_cols)])
+
+# Split
+X_tr, X_te, y_tr, y_te = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
+
+# Models
+#Logistic Regression - Hồi quy tuyến tính
+pipe_lr = Pipeline([
+    ("prep", preprocessor),
+    ("clf", LogisticRegression(max_iter=2000, class_weight="balanced", solver="lbfgs"))
+])
+
+param_lr = {
+    "clf__C": np.logspace(-3, 2, 30)  # 1e-3 → 1e2
+}
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+rs_lr = RandomizedSearchCV(
+    pipe_lr, param_distributions=param_lr, n_iter=25,
+    scoring="roc_auc", cv=cv, random_state=42, n_jobs=-1, verbose=1
+)
+rs_lr.fit(X_train, y_train)
+print("Best ROC-AUC (CV):", rs_lr.best_score_)
+print("Best params:", rs_lr.best_params_)
+
+#Random Forest
+pipe_rf = Pipeline([
+    ("prep", preprocessor),
+    ("clf", RandomForestClassifier(
+        class_weight="balanced", n_jobs=-1, random_state=42
+    ))
+])
+
+param_rf = {
+    "clf__n_estimators": [200, 400],
+    "clf__max_depth": [None, 8, 12],
+    "clf__min_samples_split": [2, 5],
+    "clf__min_samples_leaf": [1, 2],
+    "clf__max_features": ["sqrt"]
+}
+
+rs_rf = RandomizedSearchCV(
+    pipe_rf, param_distributions=param_rf, n_iter=10,
+    scoring="roc_auc", cv=3, random_state=42, n_jobs=-1, verbose=1
+)
+rs_rf.fit(X_train, y_train)
+print("Best ROC-AUC (CV):", rs_rf.best_score_)
+print("Best params:", rs_rf.best_params_)
+
+# Chọn mô hình báo cáo (theo yêu cầu: Random Forest)
+best_name = "rf"
+print("\nBest model selected for report:", best_name)
+
+# Vẽ ROC & PR cho model best
+best_pipe = Pipeline([("pre", pre), ("clf", models[best_name])])
+best_pipe.fit(X_tr, y_tr)
+best_prob = best_pipe.predict_proba(X_te)[:, 1]
+
+RocCurveDisplay.from_predictions(y_te, best_prob)
+plt.title(f"ROC Curve - {best_name.upper()}")
+plt.show()
+
+PrecisionRecallDisplay.from_predictions(y_te, best_prob)
+plt.title(f"Precision-Recall Curve - {best_name.upper()}")
+plt.show()
+```
+</details>
 3. **Segmentation (Clustering)**  
    - KMeans clustering applied on churned users.  
    - Elbow method → k=4 optimal clusters.  
