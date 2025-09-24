@@ -72,258 +72,165 @@ How can we **predict and understand churn behavior** among e-commerce app users 
 
 ## ⚒️ Main Process
 
-1. **Data Preparation**  
-   - Handle nulls (imputation).  
-   - Encode categorical variables (OneHotEncoder).  
-   - Standardize numeric features.  
+1. **Exploratory Data Analysis (EDA)**  
+   - Load dataset from Google Sheets (CSV format).  
+   - Inspect columns, datatypes, and summary statistics.  
+   - Check class distribution of target `Churn`.  
+   - Identify missing values.  
 
    <details>
-   <summary>📌 View Python code for Data Preparation </summary>
+   <summary>📌 View Python code for EDA </summary>
 
    ```python
-   from sklearn.model_selection import train_test_split
-   from sklearn.compose import ColumnTransformer
-   from sklearn.preprocessing import OneHotEncoder, StandardScaler
-   from sklearn.pipeline import Pipeline
-   from sklearn.impute import SimpleImputer
+   # Load libraries
+   import pandas as pd
+   import seaborn as sns
+   import matplotlib.pyplot as plt
+   from scipy.stats import chi2_contingency, ttest_ind
 
-   # Separate features and target
-   y = df["Churn"]
-   X = df.drop(columns=["Churn", "CustomerID"])
+   # Load dataset from Google Sheets
+   file_id = "1yxgr0Qj3TiXRehYa0PED1t4zIga9gdY5"
+   url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
+   df = pd.read_csv(url)
 
-   # Numeric & categorical columns
-   num_cols = X.select_dtypes(include=["int64","float64"]).columns
-   cat_cols = X.select_dtypes(include=["object"]).columns
+   # Inspect data
+   print(df.head())
+   print(df.columns)
+   df.info()
+   df.describe()
 
-   # Preprocessor
-   numeric = Pipeline([("imputer", SimpleImputer(strategy="median")),
-                       ("scaler", StandardScaler())])
-   categorical = Pipeline([("imputer", SimpleImputer(strategy="most_frequent")),
-                           ("onehot", OneHotEncoder(handle_unknown="ignore"))])
-   preprocessor = ColumnTransformer([("num", numeric, num_cols),
-                                     ("cat", categorical, cat_cols)])
-   ```
-   </details>
+   # Target distribution
+   print(df['Churn'].value_counts(normalize=True))
 
-2. **Exploratory Data Analysis (EDA)**  
-   - **Correlation analysis** (numeric features vs churn).
+   # Missing values
+   print(df.isnull().sum())
+
+2. **Exploratory Data Analysis – Numeric Features Correlation**  
+   - Select numeric variables: `Tenure`, `SatisfactionScore`, `DaySinceLastOrder`, `OrderCount`, `CouponUsed`, `CashbackAmount`, `HourSpendOnApp`.  
+   - Calculate Pearson correlation between numeric features and `Churn`.  
+   - Visualize correlations with bar chart.  
 
    <details>
-      <summary>📌 View Python code for Numberic features </summary>
-   
-      ```python
-   #Phân tích các biến số học - Numberic features - Correlation
-   
+   <summary>📌 View Python code for Numeric Correlation </summary>
+
+   ```python
+   # Correlation analysis
    numeric_cols = ['Tenure','SatisfactionScore','DaySinceLastOrder',
                    'OrderCount','CouponUsed','CashbackAmount','HourSpendOnApp']
-   
+
    corrs = {}
    for col in numeric_cols:
-       corrs[col] = df[col].corr(df['Churn'])  # Pearson correlation (0/1 với numeric)
-   
-   print("Correlation với Churn:")
+       corrs[col] = df[col].corr(df['Churn'])  # Pearson correlation (0/1 with numeric)
+
+   print("Correlation with Churn:")
    for k,v in corrs.items():
        print(f"{k}: {v:.3f}")
-   
+
+   # Visualization
    corr_df = pd.DataFrame.from_dict(corrs, orient='index', columns=['Correlation']).sort_values(by='Correlation')
-   
-   # Plot bar chart
+
    plt.figure(figsize=(8,5))
    sns.barplot(x=corr_df.index, y='Correlation', data=corr_df, palette="coolwarm")
    plt.xticks(rotation=45)
    plt.title("Point Biserial Correlation between Churn and Numeric Features")
    plt.axhline(0, color='black', linestyle='--')
    plt.show()
-      ```
-      <img width="706" height="560" alt="image" src="https://github.com/user-attachments/assets/5cfdee3d-d6e7-4797-81e5-f412c2c3a8b3" />
+   ```
+   </details>
+      
+   ### 📍Output (correlation values):
    
-      </details>
+   - Tenure: -0.349
+   
+   - SatisfactionScore: 0.105
+   
+   - DaySinceLastOrder: -0.161
+   
+   - OrderCount: -0.029
+   
+   - CouponUsed: -0.008
+   
+   - CashbackAmount: -0.154
+   
+   - HourSpendOnApp: 0.019
+   
+   ### 📊 Visualization
+   Bar chart showing correlations  
+   <img width="706" height="560" alt="image" src="https://github.com/user-attachments/assets/bf33d456-16cb-496a-b626-98df4bc13b5c" />
 
+      **Interpretation:**  
+   - Longer **Tenure** and higher **CashbackAmount** strongly reduce churn.  
+   - More **recent orders** also reduce churn (DaySinceLastOrder negative).  
+   - **SatisfactionScore** shows a surprising positive correlation → may indicate misalignment between score and true loyalty.  
+   - **OrderCount**, **CouponUsed**, **HourSpendOnApp** have near-zero impact on churn.  
 
-  
+### 3. Categorical Features – Chi-square Test
 
-   - **Chi-square test** (categorical vs churn)
-
-   <details>
-    <summary>📌 View Python code for Categorical Features </summary>
-   
-      ```python
-   #Phân tích với biến phân loại - Categorical features - Chi-square test
-   
-   cat_cols = ['PreferredLoginDevice','PreferredPaymentMode','Gender',
-               'MaritalStatus','PreferedOrderCat','Complain']
-   
-   for col in cat_cols:
-   
-       # Kiểm định Chi-square - Chi-square tesst 
-       crosstab = pd.crosstab(df[col], df['Churn'])
-       chi2, p, dof, ex = chi2_contingency(crosstab)
-   
-       # Tính tỷ lệ churn + số lượng - Calculate churn rate and stats
-       summary = df.groupby(col)['Churn'].agg(['mean','count','sum'])
-       summary = summary.rename(columns={'mean':'ChurnRate','count':'Total','sum':'Churned'})
-       summary = summary.sort_values(by='ChurnRate', ascending=False)
-   
-       # In bảng số liệu - Print infor table
-       print(f"\n=== {col} ===")
-       print(summary.round(3))
-       print(f"Chi-square test p-value = {p:.6f}")
-   
-       # Vẽ chart - Visualization
-       plt.figure(figsize=(6,4))
-       sns.barplot(x=summary.index, y=summary['ChurnRate'], palette="viridis")
-       plt.title(f"Churn rate by {col}")
-       plt.ylabel("Churn rate")
-       plt.xticks(rotation=45)
-       plt.show()
-      ```
-      === PreferredLoginDevice ===
-   
-      <img width="545" height="455" alt="image" src="https://github.com/user-attachments/assets/1a123b69-997c-49fa-9778-95153eaf8198" />
-   
-      === PreferredPaymentMode ===
-      
-      <img width="545" height="472" alt="image" src="https://github.com/user-attachments/assets/46b42435-4e6a-42f7-8222-115a0ab97b6e" />
-      
-      === Gender ===
-      
-      <img width="553" height="425" alt="image" src="https://github.com/user-attachments/assets/ba559f89-02d0-46cb-99e6-530a84a60b50" />
-      
-      === MaritalStatus ===
-      
-      <img width="545" height="433" alt="image" src="https://github.com/user-attachments/assets/30027f9e-a9ac-4a41-abda-4def11674602" />
-      
-      === PreferedOrderCat ===
-      
-      <img width="545" height="486" alt="image" src="https://github.com/user-attachments/assets/3534c883-6b11-4282-8ea8-9130aa6bc0bf" />
-      
-      === Complain ===
-      
-      <img width="545" height="395" alt="image" src="https://github.com/user-attachments/assets/7cb6178f-7b23-41d9-8b70-976f93e80eac" />
-      
-      
-      </details>
-
-
-2. **Modeling**  
-   - Algorithms tested: Logistic Regression, Random Forest.  
-   - Metrics evaluated: Precision, Recall, F1, ROC-AUC, PR-AUC.  
-   - **Best model selected**: Random Forest (balanced).  
-
-   *Placeholder for chart: ROC Curve & Precision-Recall Curve*  
-   
 <details>
-  <summary>📌 View Python code for Modeling (LogReg & RandomForest, balanced)</summary>
+  <summary>📌 View Python code</summary>
 
 ```python
-# Modeling: Logistic Regression & Random Forest (balanced) + ROC/PR evaluation
+# Phân tích với biến phân loại (Categorical features) - Chi-square test
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+cat_cols = ['PreferredLoginDevice','PreferredPaymentMode','Gender',
+            'MaritalStatus','PreferedOrderCat','Complain']
 
-from sklearn.model_selection import train_test_split
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
-from sklearn.metrics import (
-    classification_report, roc_auc_score, average_precision_score,
-    confusion_matrix, RocCurveDisplay, PrecisionRecallDisplay
-)
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
+# 1. Chuẩn hóa text trong các cột phân loại - Standardize text
+for col in cat_cols:
+    df[col] = df[col].astype(str).str.strip().str.title()  # đồng nhất viết hoa chữ cái đầu
 
-# Target & features
-y = df["Churn"].astype(int)
-X = df.drop(columns=["Churn", "CustomerID"])
-
-# Column types
-num_cols = X.select_dtypes(include=["int64","float64"]).columns
-cat_cols = X.select_dtypes(include=["object"]).columns
-
-# Preprocessing
-numeric = Pipeline([("imputer", SimpleImputer(strategy="median")),
-                    ("scaler", StandardScaler())])
-categorical = Pipeline([("imputer", SimpleImputer(strategy="most_frequent")),
-                        ("onehot", OneHotEncoder(handle_unknown="ignore"))])
-
-pre = ColumnTransformer([("num", numeric, num_cols),
-                         ("cat", categorical, cat_cols)])
-
-# Split
-X_tr, X_te, y_tr, y_te = train_test_split(
-    X, y, test_size=0.2, stratify=y, random_state=42
-)
-
-# Models
-#Logistic Regression - Hồi quy tuyến tính
-pipe_lr = Pipeline([
-    ("prep", preprocessor),
-    ("clf", LogisticRegression(max_iter=2000, class_weight="balanced", solver="lbfgs"))
-])
-
-param_lr = {
-    "clf__C": np.logspace(-3, 2, 30)  # 1e-3 → 1e2
+# 2. Mapping thủ công nếu có giá trị cần gộp - Mapping values manually
+replace_dict = {
+    'PreferredLoginDevice': {
+        'Mobile Phone': 'Phone',
+        'Phone': 'Phone'
+    },
+    'PreferredPaymentMode': {
+        'Debit Card': 'Card',
+        'Credit Card': 'Card',
+        'Cc': 'Card',
+        'Cash On Delivery':'COD',
+        'Cod':'COD'
+    },
 }
 
-cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-rs_lr = RandomizedSearchCV(
-    pipe_lr, param_distributions=param_lr, n_iter=25,
-    scoring="roc_auc", cv=cv, random_state=42, n_jobs=-1, verbose=1
-)
-rs_lr.fit(X_train, y_train)
-print("Best ROC-AUC (CV):", rs_lr.best_score_)
-print("Best params:", rs_lr.best_params_)
+df = df.replace(replace_dict)  # Replace và chuẩn hóa giá trị
 
-#Random Forest
-pipe_rf = Pipeline([
-    ("prep", preprocessor),
-    ("clf", RandomForestClassifier(
-        class_weight="balanced", n_jobs=-1, random_state=42
-    ))
-])
+# 3. Phân tích và trực quan hóa
+for col in cat_cols:
 
-param_rf = {
-    "clf__n_estimators": [200, 400],
-    "clf__max_depth": [None, 8, 12],
-    "clf__min_samples_split": [2, 5],
-    "clf__min_samples_leaf": [1, 2],
-    "clf__max_features": ["sqrt"]
-}
+    # Kiểm định Chi-square
+    crosstab = pd.crosstab(df[col], df['Churn'])
+    chi2, p, dof, ex = chi2_contingency(crosstab)
 
-rs_rf = RandomizedSearchCV(
-    pipe_rf, param_distributions=param_rf, n_iter=10,
-    scoring="roc_auc", cv=3, random_state=42, n_jobs=-1, verbose=1
-)
-rs_rf.fit(X_train, y_train)
-print("Best ROC-AUC (CV):", rs_rf.best_score_)
-print("Best params:", rs_rf.best_params_)
+    # Tính churn rate + số lượng
+    summary = df.groupby(col)['Churn'].agg(['mean','count','sum'])
+    summary = summary.rename(columns={'mean':'ChurnRate','count':'Total','sum':'Churned'})
+    summary = summary.sort_values(by='ChurnRate', ascending=False)
 
-# Chọn mô hình báo cáo (theo yêu cầu: Random Forest)
-best_name = "rf"
-print("\nBest model selected for report:", best_name)
+    # In bảng kết quả
+    print(f"\n=== {col} ===")
+    print(summary.round(3))
+    print(f"Chi-square test p-value = {p:.6f}")
 
-# Vẽ ROC & PR cho model best
-best_pipe = Pipeline([("pre", pre), ("clf", models[best_name])])
-best_pipe.fit(X_tr, y_tr)
-best_prob = best_pipe.predict_proba(X_te)[:, 1]
-
-RocCurveDisplay.from_predictions(y_te, best_prob)
-plt.title(f"ROC Curve - {best_name.upper()}")
-plt.show()
-
-PrecisionRecallDisplay.from_predictions(y_te, best_prob)
-plt.title(f"Precision-Recall Curve - {best_name.upper()}")
-plt.show()
+    # Vẽ chart
+    plt.figure(figsize=(6,4))
+    sns.barplot(x=summary.index, y=summary['ChurnRate'], palette="viridis")
+    plt.title(f"Churn rate by {col}")
+    plt.ylabel("Churn rate")
+    plt.xticks(rotation=45)
+    plt.show()
 ```
 </details>
-3. **Segmentation (Clustering)**  
-   - KMeans clustering applied on churned users.  
-   - Elbow method → k=4 optimal clusters.  
 
-   *Placeholder for chart: Cluster Distribution (k=4)*  
+   === PreferredLoginDevice ===
+                         ChurnRate  Total  Churned
+   PreferredLoginDevice                           
+   Computer                  0.198   1634      324
+   Phone                     0.156   3996      624
+   
+   Chi-square test p-value = 0.000148
+   <img width="553" height="438" alt="image" src="https://github.com/user-attachments/assets/c626a3bc-972a-4d6e-96c1-d187f2320416" />
 
 ---
 
