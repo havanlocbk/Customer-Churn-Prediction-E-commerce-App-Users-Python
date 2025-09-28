@@ -251,7 +251,7 @@ import matplotlib.pyplot as plt
 <summary>📌 View Python code</summary>
 
 ```python
-# Chuẩn hóa tên cột
+# Chuẩn hóa tên cột - Columns standadize
 df.columns = df.columns.str.strip()
 
 # Chuẩn hóa target Churn về 0/1 - Target & features
@@ -274,6 +274,9 @@ print("Số numeric:", len(num_cols), "| Số categorical:", len(cat_cols))
 ```
 </details>
 
+<details>
+<summary>📌 View Python code</summary>
+  
 ```python
 #Pre-processing - tiền xử lý
 
@@ -294,6 +297,9 @@ preprocessor = ColumnTransformer([
 ```
 </details>
 
+<details>
+<summary>📌 View Python code</summary>
+  
 ```python
 #Train, Valid, Split
 
