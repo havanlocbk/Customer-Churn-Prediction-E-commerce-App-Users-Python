@@ -95,7 +95,8 @@ print(corr_df)
 ```
 </details>
 
-*Placeholder for chart: Correlation bar chart (numeric features vs churn)*  
+  <img width="706" height="560" alt="image" src="https://github.com/user-attachments/assets/5ca64f80-d25e-464a-a934-8cba04c0203f" />
+
 
 📍 **Key findings**:  
 - Longer **Tenure** and higher **CashbackAmount** strongly reduce churn.  
@@ -123,12 +124,18 @@ for col in cat_cols:
 ```
 </details>
 
-*Placeholder for chart: Churn rate by categorical features*  
+  <img width="545" height="429" alt="image" src="https://github.com/user-attachments/assets/54e9042c-6266-4e7a-a47d-9fa627ff0db6" />
+
+ <img width="545" height="395" alt="image" src="https://github.com/user-attachments/assets/8c921ad9-58b2-4b4d-ae30-d68aa08ee10e" />
+
+ <img width="553" height="438" alt="image" src="https://github.com/user-attachments/assets/31e95512-5a0c-42b9-930a-f69cfd7b0b60" />
+
+
 
 📍 **Key findings**:  
 - **COD Payment** users churn more.  
 - **Complaints** highly correlated with churn.  
-- **PreferredLoginDevice = Computer/iPhone** → higher churn rates.  
+- **PreferredLoginDevice = Computer/Phone** → higher churn rates.  
 
 ---
 
