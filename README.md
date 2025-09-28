@@ -355,19 +355,17 @@ scale_pos_weight
   ```
 </details>
 
-👉👉👉
+👉👉👉 Logistic Regression (Baseline)
 
-Logistic Regression (Baseline)
+- ROC-AUC: 0.8873
 
-ROC-AUC: 0.8873
+- PR-AUC: 0.6671
 
-PR-AUC: 0.6671
+👉👉👉 Random Forest (Baseline)
 
-Random Forest (Baseline)
+- ROC-AUC: 0.9876
 
-ROC-AUC: 0.9876
-
-PR-AUC: 0.9538
+- PR-AUC: 0.9538
 
 
 📍 **Key findings:**  
@@ -580,7 +578,7 @@ print(cluster_summary)
 - Inactive days ↑ → churn ↑ (reactivation campaigns needed).  
 - Cashback ↑ → churn ↓ (effective lever).  
 - COD payment & complaints strongly linked to churn.  
-- iPhone/computer users churn more.  
+- Phone/computer users churn more.  
 
 ---
 
