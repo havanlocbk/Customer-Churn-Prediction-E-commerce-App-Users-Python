@@ -54,7 +54,7 @@ How can we **predict and understand churn behavior** among e-commerce app users 
 <summary>📌 View Python code</summary>
 
 ```python
-#Load file và phân tích EDA
+#Load file và phân tích EDA - Loading and EDA
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -75,10 +75,6 @@ print(df.isnull().sum())
 
 
 
-📍 **Key findings:**  
-- Dataset shape: 5,630 rows × 20 columns.
-- Target column moderately imbalanced.
-- Missing values in several numeric features (~200–300 each).  
 
 ---
 
@@ -101,26 +97,7 @@ for col in numeric_cols:
 print("Correlation với Churn:")
 for k,v in corrs.items():
     print(f"{k}: {v:.3f}")
-```
-</details>
 
-*Placeholder for chart: Correlation bar chart (numeric features vs churn)*
-
-📍 **Key findings:**  
-- Tenure ↓ → churn ↑
-- CashbackAmount ↑ → churn ↓
-- DaySinceLastOrder negative correlation with churn
-- SatisfactionScore unexpected positive correlation  
-
----
-
-#### 🔹 Numeric Features – Visualization  
-👉 **Purpose:** Visualize correlation results of numeric features with churn.  
-
-<details>
-<summary>📌 View Python code</summary>
-
-```python
 #Phân tích các biến số học - Numberic features - Visualization
 corr_df = pd.DataFrame.from_dict(corrs, orient='index', columns=['Correlation']).sort_values(by='Correlation')
 
@@ -134,10 +111,23 @@ plt.show()
 ```
 </details>
 
-*Placeholder for chart: Correlation heatmap/bar chart*
+  Tenure: -0.349
+  SatisfactionScore: 0.105
+  DaySinceLastOrder: -0.161
+  OrderCount: -0.029
+  CouponUsed: -0.008
+  CashbackAmount: -0.154
+  HourSpendOnApp: 0.019
+
 
 📍 **Key findings:**  
-- Visual confirms strong negative correlation of tenure with churn.  
+- Tenure ↓ → churn ↑
+- CashbackAmount ↑ → churn ↓
+- DaySinceLastOrder negative correlation with churn
+- SatisfactionScore unexpected positive correlation  
+
+
+<img width="706" height="560" alt="image" src="https://github.com/user-attachments/assets/92b8fa7d-562e-4b55-94b0-e2339c96c847" />
 
 ---
 
@@ -148,7 +138,6 @@ plt.show()
 <summary>📌 View Python code</summary>
 
 ```python
-#AFTER FEEDBACK
 #-------------------------
 
 # Phân tích với biến phân loại (Categorical features) - Chi-square test
@@ -204,30 +193,20 @@ for col in cat_cols:
 ```
 </details>
 
-*Placeholder for chart: Churn rate by categorical features*
+  <img width="545" height="429" alt="image" src="https://github.com/user-attachments/assets/018c2f6e-905d-4fbf-8ed8-cc5d3cb90fcc" />
+
+  <img width="545" height="395" alt="image" src="https://github.com/user-attachments/assets/e99a2d4c-c93a-41f5-844b-652c1d0cca08" />
+
+  <img width="545" height="486" alt="image" src="https://github.com/user-attachments/assets/c500d8e3-1e12-4e27-98cb-def69f071357" />
+
+
 
 📍 **Key findings:**  
 - COD payment method linked to higher churn
 - Complaints strongly associated with churn
 - Certain devices show higher churn rates  
 
----
 
-#### 🔹 Categorical Features – Visualization  
-👉 **Purpose:** Visualize churn rates across categorical variables.  
-
-<details>
-<summary>📌 View Python code</summary>
-
-```python
-#Build the Machine Learning model for predicting churned users. (fine tuning)
-```
-</details>
-
-*Placeholder for chart: Bar plots for categorical churn rates*
-
-📍 **Key findings:**  
-- Visualization highlights churn-prone groups (COD users, complainers).  
 
 ---
 
