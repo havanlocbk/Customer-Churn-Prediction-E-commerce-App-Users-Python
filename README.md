@@ -358,11 +358,17 @@ scale_pos_weight
 👉👉👉
 
 Logistic Regression (Baseline)
+
 ROC-AUC: 0.8873
+
 PR-AUC: 0.6671
+
 Random Forest (Baseline)
+
 ROC-AUC: 0.9876
+
 PR-AUC: 0.9538
+
 
 📍 **Key findings:**  
 - Random Forest outperforms Logistic Regression on recall and F1.  
@@ -446,71 +452,6 @@ results.head()
 - Threshold ~0.52 → Recall ~0.80, Precision ~0.92.
 - Chosen threshold = 0.52 (balanced trade-off).   
 
----
-#### 🔹 Threshold tuning – Recall ≥ 0.8  
-👉 **Purpose:** Select threshold ensuring Recall ≥ 0.8 for churn detection.
-
-<details>
-<summary>📌 View Python code</summary>
-
-```python
-from sklearn.metrics import precision_recall_curve, classification_report, confusion_matrix, roc_auc_score, average_precision_score
-import numpy as np
-
-# Xác suất dự đoán churn từ mô hình RF
-y_proba = pipe_rf.predict_proba(X_test)[:,1]   # best_model = RF đã fit
-y_true = y_test
-
-# Precision-Recall curve
-precisions, recalls, thresholds = precision_recall_curve(y_true, y_proba)
-thresholds = np.append(thresholds, 1.0)  # khép kín 1.0
-
-# Tính F1 cho từng threshold
-f1s = 2 * (precisions * recalls) / (precisions + recalls + 1e-12)
-idx_f1 = np.nanargmax(f1s)
-
-thr_f1 = thresholds[idx_f1]
-print(f"Ngưỡng tối ưu theo F1 = {thr_f1:.3f} | Precision={precisions[idx_f1]:.3f} | Recall={recalls[idx_f1]:.3f}")
-
-# Chọn ngưỡng để đạt Recall ≥ 0.80
-target_recall = 0.80
-mask = recalls >= target_recall
-if mask.any():
-    idx_rec = np.argmax(precisions[mask])  # chọn precision cao nhất trong số recall ≥ 0.8
-    idx_rec = np.where(mask)[0][idx_rec]
-    thr_rec = thresholds[idx_rec]
-    print(f"Ngưỡng đạt Recall ≥ {target_recall}: {thr_rec:.3f} | Precision={precisions[idx_rec]:.3f} | Recall={recalls[idx_rec]:.3f}")
-else:
-    print("Không đạt được Recall ≥ 0.80 với bất kỳ ngưỡng nào.")
-
-# Đánh giá confusion matrix tại threshold tối ưu F1
-y_pred_f1 = (y_proba >= thr_f1).astype(int)
-print("\n=== Kết quả với threshold tối ưu F1 ===")
-print(confusion_matrix(y_true, y_pred_f1))
-print(classification_report(y_true, y_pred_f1, digits=3))
-
-# Đánh giá tại threshold Recall≥0.80
-if mask.any():
-    y_pred_rec = (y_proba >= thr_rec).astype(int)
-    print("\n=== Kết quả với threshold Recall≥0.80 ===")
-    print(confusion_matrix(y_true, y_pred_rec))
-    print(classification_report(y_true, y_pred_rec, digits=3))
-```
-</details>
-
-<details>
-<summary>📌 View Python code</summary>
-# Lưu kết quả
-results = pd.DataFrame({
-    "CustomerID": X_test["CustomerID"].values if "CustomerID" in X_test.columns else range(len(X_test)),
-    "y_true": y_test.values,
-    "y_proba": y_proba,
-    "y_pred_F1": y_pred_f1,
-    "y_pred_Recall80": (y_proba >= 0.520).astype(int)  #y_proba Ngưỡng đạt Recall ≥ 0.8: 0.520 ưu tiên cân bằng giữa Precision & Recall 
-})
-results.head()
-```
-</details>
 
 ---
 
