@@ -361,10 +361,6 @@ scale_pos_weight
 📍 **Key findings:**  
 - Random Forest outperforms Logistic Regression on recall and F1.  
 
-  ```python
-  ## Sau khi xem kết quả baseline, thì Random Forest tốt hơn
-  # chọn Random Forest model để tuning
-  ```
 
 ---
 
@@ -420,13 +416,6 @@ scale_pos_weight
   ```
 </details>
 
-
-📍 **Key findings:**  
-- Optimal threshold ~0.35 → Recall ~0.94, Precision ~0.88.  
-
----
-
-#### 🔹 Threshold tuning – Recall ≥ 0.8  
 👉 **Purpose:** Select threshold ensuring Recall ≥ 0.8 for churn detection.  
 
 <details>
@@ -445,12 +434,12 @@ results.head()
   ```
 
 </details>
-
-
+---
 
 📍 **Key findings:**  
 - Threshold ~0.52 → Recall ~0.80, Precision ~0.92.
-- Chosen threshold = 0.52 (balanced trade-off).  
+- Chosen threshold = 0.52 (balanced trade-off).   
+
 
 ---
 
