@@ -212,14 +212,14 @@ for col in cat_cols:
 
 ### 3.2 Modeling
 
-#### 🔹 Train-test split  
-👉 **Purpose:** Split dataset into training and testing sets with stratification on churn variable.  
+#### 🔹 Import libraries  
+👉 **Purpose:** Import neccessary libraries for Modelling.  
 
 <details>
 <summary>📌 View Python code</summary>
 
 ```python
-# Setup & đọc dữ liệu
+# Setup & đọc dữ liệu - Setup and import libraries
 
 import numpy as np
 import pandas as pd
@@ -242,13 +242,10 @@ import matplotlib.pyplot as plt
 
 
 
-📍 **Key findings:**  
-- Train: 80%, Test: 20%, stratified by churn.  
-
 ---
 
-#### 🔹 Logistic Regression (baseline)  
-👉 **Purpose:** Fit logistic regression with class weights to handle imbalance.  
+#### 🔹 Standadize and split dataset  
+👉 **Purpose:** Split dataset into training and testing sets with stratification on churn variable
 
 <details>
 <summary>📌 View Python code</summary>
@@ -277,19 +274,6 @@ print("Số numeric:", len(num_cols), "| Số categorical:", len(cat_cols))
 ```
 </details>
 
-
-
-📍 **Key findings:**  
-- Baseline model for comparison.  
-
----
-
-#### 🔹 Random Forest Classifier  
-👉 **Purpose:** Train a Random Forest model with class weights to improve recall on churn class.  
-
-<details>
-<summary>📌 View Python code</summary>
-
 ```python
 #Pre-processing - tiền xử lý
 
@@ -310,19 +294,6 @@ preprocessor = ColumnTransformer([
 ```
 </details>
 
-
-
-📍 **Key findings:**  
-- Stronger performance expected vs Logistic Regression.  
-
----
-
-#### 🔹 Model Evaluation  
-👉 **Purpose:** Evaluate models using classification report, confusion matrix, and ROC-AUC.  
-
-<details>
-<summary>📌 View Python code</summary>
-
 ```python
 #Train, Valid, Split
 
@@ -335,10 +306,59 @@ scale_pos_weight
 ```
 </details>
 
+---
+
+#### 🔹 Model Evaluation  
+👉 **Purpose:** Evaluate models using classification report, confusion matrix, and ROC-AUC.  
+
+<details>
+<summary>📌 View Python code</summary>
+  
+  ```python
+  #-------------------------
+  
+  # Baseline Models (chưa tuning)
+  from sklearn.metrics import roc_auc_score, average_precision_score
+  
+  # Logistic Regression (baseline)
+  pipe_lr = Pipeline([
+      ("prep", preprocessor),
+      ("clf", LogisticRegression(max_iter=2000, class_weight="balanced", solver="lbfgs"))
+  ])
+  pipe_lr.fit(X_train, y_train)
+  
+  y_pred_lr = pipe_lr.predict(X_test)
+  y_proba_lr = pipe_lr.predict_proba(X_test)[:,1]
+  
+  print("Logistic Regression (Baseline)")
+  print("ROC-AUC:", roc_auc_score(y_test, y_proba_lr).round(4))
+  print("PR-AUC:", average_precision_score(y_test, y_proba_lr).round(4))
+  
+  # Random Forest (baseline)
+  pipe_rf = Pipeline([
+      ("prep", preprocessor),
+      ("clf", RandomForestClassifier(class_weight="balanced", n_jobs=-1, random_state=42))
+  ])
+  pipe_rf.fit(X_train, y_train)
+  
+  y_pred_rf = pipe_rf.predict(X_test)
+  y_proba_rf = pipe_rf.predict_proba(X_test)[:,1]
+  
+  print("Random Forest (Baseline)")
+  print("ROC-AUC:", roc_auc_score(y_test, y_proba_rf).round(4))
+  print("PR-AUC:", average_precision_score(y_test, y_proba_rf).round(4))
+  ```
+</details>
+
 *Placeholder for chart: Confusion Matrix (RF), ROC Curve, PR Curve*
 
 📍 **Key findings:**  
 - Random Forest outperforms Logistic Regression on recall and F1.  
+
+  ```python
+  ## Sau khi xem kết quả baseline, thì Random Forest tốt hơn
+  # chọn Random Forest model để tuning
+  ```
 
 ---
 
@@ -347,44 +367,52 @@ scale_pos_weight
 
 <details>
 <summary>📌 View Python code</summary>
-
-```python
-#AFTER FEEDBACK
-#-------------------------
-
-# Baseline Models (chưa tuning)
-from sklearn.metrics import roc_auc_score, average_precision_score
-
-# Logistic Regression (baseline)
-pipe_lr = Pipeline([
-    ("prep", preprocessor),
-    ("clf", LogisticRegression(max_iter=2000, class_weight="balanced", solver="lbfgs"))
-])
-pipe_lr.fit(X_train, y_train)
-
-y_pred_lr = pipe_lr.predict(X_test)
-y_proba_lr = pipe_lr.predict_proba(X_test)[:,1]
-
-print("Logistic Regression (Baseline)")
-print("ROC-AUC:", roc_auc_score(y_test, y_proba_lr).round(4))
-print("PR-AUC:", average_precision_score(y_test, y_proba_lr).round(4))
-
-# Random Forest (baseline)
-pipe_rf = Pipeline([
-    ("prep", preprocessor),
-    ("clf", RandomForestClassifier(class_weight="balanced", n_jobs=-1, random_state=42))
-])
-pipe_rf.fit(X_train, y_train)
-
-y_pred_rf = pipe_rf.predict(X_test)
-y_proba_rf = pipe_rf.predict_proba(X_test)[:,1]
-
-print("Random Forest (Baseline)")
-print("ROC-AUC:", roc_auc_score(y_test, y_proba_rf).round(4))
-print("PR-AUC:", average_precision_score(y_test, y_proba_rf).round(4))
-```
+  
+  ```python
+    from sklearn.metrics import precision_recall_curve, classification_report, confusion_matrix,
+    roc_auc_score, average_precision_score
+    import numpy as np
+    
+    # Xác suất dự đoán churn từ mô hình RF
+    y_proba = pipe_rf.predict_proba(X_test)[:,1]   # best_model = RF đã fit
+    y_true = y_test
+    
+    # Precision-Recall curve
+    precisions, recalls, thresholds = precision_recall_curve(y_true, y_proba)
+    thresholds = np.append(thresholds, 1.0)  # khép kín 1.0
+    
+    # Tính F1 cho từng threshold
+    f1s = 2 * (precisions * recalls) / (precisions + recalls + 1e-12)
+    idx_f1 = np.nanargmax(f1s)
+    
+    thr_f1 = thresholds[idx_f1]
+    print(f"Ngưỡng tối ưu theo F1 = {thr_f1:.3f} | Precision={precisions[idx_f1]:.3f} | Recall={recalls[idx_f1]:.3f}")
+    
+    # Chọn ngưỡng để đạt Recall ≥ 0.80
+    target_recall = 0.80
+    mask = recalls >= target_recall
+    if mask.any():
+        idx_rec = np.argmax(precisions[mask])  # chọn precision cao nhất trong số recall ≥ 0.8
+        idx_rec = np.where(mask)[0][idx_rec]
+        thr_rec = thresholds[idx_rec]
+        print(f"Ngưỡng đạt Recall ≥ {target_recall}: {thr_rec:.3f} | Precision={precisions[idx_rec]:.3f} | Recall={recalls[idx_rec]:.3f}")
+    else:
+        print("Không đạt được Recall ≥ 0.80 với bất kỳ ngưỡng nào.")
+    
+    # Đánh giá confusion matrix tại threshold tối ưu F1
+    y_pred_f1 = (y_proba >= thr_f1).astype(int)
+    print("\n=== Kết quả với threshold tối ưu F1 ===")
+    print(confusion_matrix(y_true, y_pred_f1))
+    print(classification_report(y_true, y_pred_f1, digits=3))
+    
+    # Đánh giá tại threshold Recall≥0.80
+    if mask.any():
+        y_pred_rec = (y_proba >= thr_rec).astype(int)
+        print("\n=== Kết quả với threshold Recall≥0.80 ===")
+        print(confusion_matrix(y_true, y_pred_rec))
+        print(classification_report(y_true, y_pred_rec, digits=3))
+  ```
 </details>
-
 
 
 📍 **Key findings:**  
@@ -398,10 +426,18 @@ print("PR-AUC:", average_precision_score(y_test, y_proba_rf).round(4))
 <details>
 <summary>📌 View Python code</summary>
 
-```python
-## Sau khi xem kết quả baseline, thì Random Forest tốt hơn
-# chọn Random Forest model để tuning
-```
+  ```python
+# Lưu kết quả
+results = pd.DataFrame({
+    "CustomerID": X_test["CustomerID"].values if "CustomerID" in X_test.columns else range(len(X_test)),
+    "y_true": y_test.values,
+    "y_proba": y_proba,
+    "y_pred_F1": y_pred_f1,
+    "y_pred_Recall80": (y_proba >= 0.520).astype(int)  #y_proba Ngưỡng đạt Recall ≥ 0.8: 0.520 ưu tiên cân bằng giữa Precision & Recall 
+})
+results.head()
+  ```
+
 </details>
 
 
@@ -414,87 +450,43 @@ print("PR-AUC:", average_precision_score(y_test, y_proba_rf).round(4))
 
 ### 3.3 Segmentation (Clustering)
 
-#### 🔹 Prepare churned subset  
-👉 **Purpose:** Filter dataset for churned users only for segmentation analysis.  
+#### 🔹 Prepare churned subset  &  Feature selection & scaling  
+👉 **Purpose:** Filter dataset for churned users only for segmentation analysis. And select features for clustering and apply standard scaling.  
 
 <details>
 <summary>📌 View Python code</summary>
 
 ```python
-from sklearn.metrics import precision_recall_curve, classification_report, confusion_matrix, roc_auc_score, average_precision_score
-import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
 
-# Xác suất dự đoán churn từ mô hình RF
-y_proba = pipe_rf.predict_proba(X_test)[:,1]   # best_model = RF đã fit
-y_true = y_test
+# Lọc churn users
+churn_users = df[df["Churn"] == 1].copy()
 
-# Precision-Recall curve
-precisions, recalls, thresholds = precision_recall_curve(y_true, y_proba)
-thresholds = np.append(thresholds, 1.0)  # khép kín 1.0
+# Chọn một số biến hành vi quan trọng để phân cụm
+features = ["Tenure", "DaySinceLastOrder", "OrderCount", "CouponUsed",
+            "CashbackAmount", "SatisfactionScore", "HourSpendOnApp"]
 
-# Tính F1 cho từng threshold
-f1s = 2 * (precisions * recalls) / (precisions + recalls + 1e-12)
-idx_f1 = np.nanargmax(f1s)
+# Xử lý missing nếu có
+X_cluster = churn_users[features].fillna(0)
+X_scaled = StandardScaler().fit_transform(X_cluster)
 
-thr_f1 = thresholds[idx_f1]
-print(f"Ngưỡng tối ưu theo F1 = {thr_f1:.3f} | Precision={precisions[idx_f1]:.3f} | Recall={recalls[idx_f1]:.3f}")
+# Chọn số cluster bằng Elbow method
+wcss = []
+for k in range(2, 7):
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    kmeans.fit(X_scaled)
+    wcss.append(kmeans.inertia_)
 
-# Chọn ngưỡng để đạt Recall ≥ 0.80
-target_recall = 0.80
-mask = recalls >= target_recall
-if mask.any():
-    idx_rec = np.argmax(precisions[mask])  # chọn precision cao nhất trong số recall ≥ 0.8
-    idx_rec = np.where(mask)[0][idx_rec]
-    thr_rec = thresholds[idx_rec]
-    print(f"Ngưỡng đạt Recall ≥ {target_recall}: {thr_rec:.3f} | Precision={precisions[idx_rec]:.3f} | Recall={recalls[idx_rec]:.3f}")
-else:
-    print("Không đạt được Recall ≥ 0.80 với bất kỳ ngưỡng nào.")
-
-# Đánh giá confusion matrix tại threshold tối ưu F1
-y_pred_f1 = (y_proba >= thr_f1).astype(int)
-print("\n=== Kết quả với threshold tối ưu F1 ===")
-print(confusion_matrix(y_true, y_pred_f1))
-print(classification_report(y_true, y_pred_f1, digits=3))
-
-# Đánh giá tại threshold Recall≥0.80
-if mask.any():
-    y_pred_rec = (y_proba >= thr_rec).astype(int)
-    print("\n=== Kết quả với threshold Recall≥0.80 ===")
-    print(confusion_matrix(y_true, y_pred_rec))
-    print(classification_report(y_true, y_pred_rec, digits=3))
+plt.plot(range(2, 7), wcss, marker="o")
+plt.xlabel("Number of clusters")
+plt.ylabel("WCSS")
+plt.title("Elbow Method")
+plt.show()
 ```
-</details>
 
-
-
-📍 **Key findings:**  
-- Subset ready for clustering.  
-
----
-
-#### 🔹 Feature selection & scaling  
-👉 **Purpose:** Select features for clustering and apply standard scaling.  
-
-<details>
-<summary>📌 View Python code</summary>
-
-```python
-# Lưu kết quả
-results = pd.DataFrame({
-    "CustomerID": X_test["CustomerID"].values if "CustomerID" in X_test.columns else range(len(X_test)),
-    "y_true": y_test.values,
-    "y_proba": y_proba,
-    "y_pred_F1": y_pred_f1,
-    "y_pred_Recall80": (y_proba >= 0.490).astype(int)  # đổi 0.490 nếu bạn chọn ngưỡng khác
-})
-results.head()
-```
-</details>
-
-
-
-📍 **Key findings:**  
-- Data standardized for KMeans.  
+</details> 
 
 ---
 
